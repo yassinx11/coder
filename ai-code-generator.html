@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Code Generator</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      animation: slideIn 0.8s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      padding: 40px;
+      text-align: center;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .input-section {
+      padding: 40px;
+      background: white;
+    }
+
+    .input-group {
+      margin-bottom: 30px;
+    }
+
+    label {
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #374151;
+    }
+
+    #promptInput {
+      width: 100%;
+      padding: 15px 20px;
+      font-size: 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      background: #f9fafb;
+      transition: all 0.3s ease;
+      outline: none;
+    }
+
+    #promptInput:focus {
+      border-color: #4f46e5;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .generate-btn {
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .generate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+    }
+
+    .generate-btn:active {
+      transform: translateY(0);
+    }
+
+    .generate-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .output-section {
+      padding: 40px;
+      background: #f8fafc;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .output-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .output-header h3 {
+      font-size: 1.5rem;
+      color: #374151;
+      font-weight: 600;
+    }
+
+    .copy-btn {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      opacity: 0;
+      transform: translateX(10px);
+    }
+
+    .copy-btn.visible {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .copy-btn:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+
+    #output {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 25px;
+      border-radius: 12px;
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+      min-height: 200px;
+      position: relative;
+    }
+
+    .loading {
+      position: relative;
+    }
+
+    .loading::after {
+      content: '';
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      width: 20px;
+      height: 20px;
+      border: 2px solid #4f46e5;
+      border-top: 2px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .error {
+      color: #ef4444;
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+    }
+
+    .success {
+      border-left: 4px solid #10b981;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      .header {
+        padding: 30px 20px;
+      }
+
+      .header h1 {
+        font-size: 2rem;
+      }
+
+      .input-section,
+      .output-section {
+        padding: 30px 20px;
+      }
+
+      .output-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+
+      .copy-btn {
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    /* Custom scrollbar */
+    #output::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    #output::-webkit-scrollbar-track {
+      background: #334155;
+      border-radius: 4px;
+    }
+
+    #output::-webkit-scrollbar-thumb {
+      background: #64748b;
+      border-radius: 4px;
+    }
+
+    #output::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🤖 AI Code Generator</h1>
+      <p>Transform your ideas into code with the power of AI</p>
+    </div>
+
+    <div class="input-section">
+      <div class="input-group">
+        <label for="promptInput">Describe the program or game you want to create:</label>
+        <input type="text" id="promptInput" placeholder="e.g., Create a simple calculator with basic operations..." />
+      </div>
+      <button class="generate-btn" onclick="generateCode()">✨ Generate Code</button>
+    </div>
+
+    <div class="output-section">
+      <div class="output-header">
+        <h3>Generated Code</h3>
+        <button class="copy-btn" id="copyBtn" onclick="copyCode()">📋 Copy Code</button>
+      </div>
+      <pre id="output">Ready to generate your code! Enter a description above and click the generate button.</pre>
+    </div>
+  </div>
+
+  <script>
+    // ✅ Replace with your actual API key
+    const API_KEY = "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";
+    
+    async function generateCode() {
+      const ask = document.getElementById("promptInput").value.trim();
+      const output = document.getElementById("output");
+      const generateBtn = document.querySelector(".generate-btn");
+      const copyBtn = document.getElementById("copyBtn");
+      
+      if (!ask) {
+        alert("Please enter a description!");
+        return;
+      }
+      
+      // Update UI for loading state
+      generateBtn.disabled = true;
+      generateBtn.textContent = "🔄 Generating...";
+      output.textContent = "Generating your code... This may take a few moments.";
+      output.className = "loading";
+      copyBtn.classList.remove("visible");
+      
+      try {
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${API_KEY}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: "qwen/qwen3-coder:free",
+            messages: [
+              {
+                "role": "user",
+                "content": `Make code about: ${ask}`
+              }
+            ]
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Error ${response.status}: ${errorText}`);
+        }
+        
+        const result = await response.json();
+        const code = result.choices[0].message.content;
+        
+        // Update UI for success
+        output.textContent = code;
+        output.className = "success";
+        copyBtn.classList.add("visible");
+        
+      } catch (err) {
+        // Update UI for error
+        output.textContent = "❌ Failed to generate code:\n\n" + err.message;
+        output.className = "error";
+        console.error(err);
+      } finally {
+        // Reset button state
+        generateBtn.disabled = false;
+        generateBtn.textContent = "✨ Generate Code";
+      }
+    }
+    
+    function copyCode() {
+      const output = document.getElementById("output");
+      const copyBtn = document.getElementById("copyBtn");
+      
+      navigator.clipboard.writeText(output.textContent).then(() => {
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = "✅ Copied!";
+        copyBtn.style.background = "#059669";
+        
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+          copyBtn.style.background = "#10b981";
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+        alert('Failed to copy code to clipboard');
+      });
+    }
+    
+    // Allow Enter key to generate code
+    document.getElementById("promptInput").addEventListener("keypress", function(event) {
+      if (event.key === "Enter") {
+        generateCode();
+      }
+    });
+  </script>
+</body>
+</html>
